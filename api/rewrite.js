@@ -22,17 +22,17 @@ export default async function handler(req, res) {
     }
 
     // 调用 Agnes API
-    const response = await fetch(${apiBase}/chat/completions, {
+    const response = await fetch(`${apiBase}/chat/completions`, {
       method: 'POST',
       headers: {
-        'Authorization': Bearer ,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         model: 'agnes-2.0-flash',
         messages: [{
           role: 'user',
-          content: \你是小红书爆款标题改写专家。
+          content: `你是小红书爆款标题改写专家。
 
 任务：将用户输入的标题改写成5条不同风格的小红书爆款标题。
 
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
 4. 标题必须通顺自然，像一个正常人在说话
 5. 不要生硬拼接词语
 
-用户原始标题：\
+用户原始标题：${title}
 
 请严格按以下JSON格式返回（不要有任何其他内容）：
 [
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
 [
   {"title": "坚持打卡30天！这5个护肤小技巧真的绝了", "type": "数字型", "reason": "用具体数字增加可信度"},
   {"title": "熬夜脸救星😭亲测有效！我的私藏护肤秘籍", "type": "情绪型", "reason": "加入表情和情绪词"}
-]\
+]`
         }],
         temperature: 0.8,
         max_tokens: 1000
