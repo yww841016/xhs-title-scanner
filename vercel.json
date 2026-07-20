@@ -1,9 +1,11 @@
 ﻿{
-  "buildCommand": null,
-  "outputDirectory": "public",
-  "framework": null,
-  "rewrites": [
-    { "source": "/api/rewrite", "destination": "/api/rewrite.js" },
-    { "source": "/api/verify-code", "destination": "/api/verify-code.js" }
+  "version": 2,
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/rewrite", "dest": "/api/rewrite.js" },
+    { "src": "/api/verify-code", "dest": "/api/verify-code.js" },
+    { "src": "/(.*)", "dest": "/" }
   ]
 }
