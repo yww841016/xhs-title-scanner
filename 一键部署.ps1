@@ -8,25 +8,25 @@ Write-Host ""
 
 # 1. 检查并安装 Node.js（如果需要）
 Write-Host "📦 检查 Node.js..." -ForegroundColor Yellow
- = node --version 2>
-if () {
-    Write-Host "✅ Node.js 已安装: " -ForegroundColor Green
+$nodeCheck = node --version 2>&1
+if ($?) {
+    Write-Host "✅ Node.js 已安装: $nodeCheck" -ForegroundColor Green
 } else {
     Write-Host "❌ 未检测到 Node.js，请先安装: https://nodejs.org" -ForegroundColor Red
     Write-Host "按任意键退出..."
-     = System.Management.Automation.Internal.Host.InternalHost.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    $null = [System.Management.Automation.Internal.Host.InternalHost.UI.RawUI].GetProperty('ReadKey', 'NonPublic,Static').Invoke([System.Console]::UI.RawUI, @('NoEcho,IncludeKeyDown'))
     exit
 }
 
 # 2. 检查并安装 Vercel CLI
 Write-Host "📦 检查 Vercel CLI..." -ForegroundColor Yellow
- = vercel --version 2>
-if () {
+$vercelCheck = vercel --version 2>&1
+if ($?) {
     Write-Host "✅ Vercel CLI 已安装" -ForegroundColor Green
 } else {
     Write-Host "⏳ 正在安装 Vercel CLI..." -ForegroundColor Cyan
     npm i -g vercel
-    if ( -eq 0) {
+    if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Vercel CLI 安装成功" -ForegroundColor Green
     } else {
         Write-Host "❌ Vercel CLI 安装失败，请手动运行: npm i -g vercel" -ForegroundColor Red
@@ -55,7 +55,7 @@ Write-Host ""
 Write-Host 'cd "E:\AI工作区\项目\小红书标题评分器_Vercel版"' -ForegroundColor Gray
 Write-Host 'git init' -ForegroundColor Gray
 Write-Host 'git add .' -ForegroundColor Gray
-Write-Host 'git commit -m "feat: 修复 Pro 激活码安全问题"' -ForegroundColor Gray
+Write-Host 'git commit -m "feat: 优化小红书标题评分器"' -ForegroundColor Gray
 Write-Host 'git branch -M main' -ForegroundColor Gray
 Write-Host 'git remote add origin https://github.com/你的用户名/你的仓库名.git' -ForegroundColor Gray
 Write-Host 'git push -u origin main' -ForegroundColor Gray

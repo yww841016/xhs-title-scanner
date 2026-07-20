@@ -1,4 +1,28 @@
 ﻿// api/rewrite.js - AI 改写代理 API（隐藏 API Key）
+// 优化：添加请求限流、超时保护、错误重试
+
+// 简易内存限流器
+const rateLimit = new Map();
+const RATE_LIMIT_WINDOW = 60000; // 1分钟窗口
+const RATE_LIMIT_MAX = 10; // 每分钟最多10次
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const record = rateLimit.get(ip);
+  
+  if (!record || now - record.start > RATE_LIMIT_WINDOW) {
+    rateLimit.set(ip, { start: now, count: 1 });
+    return true;
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
 export default async function handler(req, res) {
   // 只接受 POST 请求
   if (req.method !== 'POST') {
@@ -12,6 +36,24 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: '标题不能为空' });
     }
 
+    // 标题长度限制
+    if (title.length < 2) {
+      return res.status(400).json({ error: '标题太短，请输入至少2个字符' });
+    }
+    if (title.length > 100) {
+      return res.status(400).json({ error: '标题太长，请控制在100字以内' });
+    }
+
+    // 获取客户端 IP（用于限流）
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() 
+               || req.socket.remoteAddress 
+               || 'unknown';
+    
+    // 限流检查
+    if (!checkRateLimit(ip)) {
+      return res.status(429).json({ error: '请求太频繁，请稍后再试' });
+    }
+
     // 从环境变量读取 API 配置
     const apiKey = process.env.AGNES_API_KEY;
     const apiBase = process.env.AGNES_API_BASE || 'https://apihub.agnes-ai.com/v1';
@@ -20,6 +62,10 @@ export default async function handler(req, res) {
       console.error('AGNES_API_KEY 环境变量未配置');
       return res.status(500).json({ error: '服务器配置错误' });
     }
+
+    // 设置超时（30秒）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     // 调用 Agnes API
     const response = await fetch(`${apiBase}/chat/completions`, {
@@ -58,8 +104,11 @@ export default async function handler(req, res) {
         }],
         temperature: 0.8,
         max_tokens: 1000
-      })
+      }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       console.error('Agnes API 错误:', response.status);
@@ -80,13 +129,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, rewrites });
     }
     
-    // 如果解析失败，返回原始内容
+    // 如果解析失败，返回默认改写
     return res.status(200).json({ 
       success: true, 
       rewrites: [{ text: content, badge: 'default', badgeText: 'AI 生成', reason: '' }] 
     });
   } catch (error) {
     console.error('改写请求失败:', error);
+    if (error.name === 'AbortError') {
+      return res.status(504).json({ error: '请求超时，请稍后重试' });
+    }
     return res.status(500).json({ error: '服务器内部错误' });
   }
 }

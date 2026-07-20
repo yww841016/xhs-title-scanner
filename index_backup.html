@@ -171,8 +171,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC"
   </div>
 </div>
 <script>
-
-
 // ── 状态管理 ──
 const MAX_FREE = 3;
 let remaining = MAX_FREE;
@@ -261,9 +259,6 @@ const PATTERNS = {
 
 const EMOTION_WORDS = ['谁懂', '救命', '绝了', '哭了', '疯了', '太', '真的', '超级', '巨', '爆', '无敌', '天呐', '啊啊', '哇塞', 'OMG', '震惊', '离谱'];
 
-// 小红书高频品类词
-const CATEGORY_WORDS = ['护肤', '美妆', '减肥', '健身', '穿搭', '美食', '旅行', '数码', '育儿', '家居', '装修', '理财', '职场', '学习', '英语', '考研', '编程', 'AI', '摄影', '宠物', '恋爱', '情感', '读书', '电影', '音乐', '游戏', '手游', '电动车', '手机', '电脑', '平板', '耳机', '手表', '包包', '鞋子', '口红', '粉底', '面膜', '精华', '眼霜', '防晒', '美白', '祛痘', '脱毛', '染烫', '发型', '化妆', '卸妆', '洁面', '补水', '抗老', '提拉', '紧致', '瘦脸', '瘦身', '增肌', '减脂', '塑形', '瑜伽', '普拉提', '跑步', '骑行', '游泳', '跳绳', '健身卡', '私教', '蛋白粉', '代餐', '轻食', '低卡', '低脂', '高蛋白', '低GI', '生酮', '断食', '催乳', '备孕', '产检', '月子', '辅食', '早教', '幼儿园', '小学', '初中', '高中', '高考', '留学', '雅思', '托福', 'GRE', 'GMAT', '四六级', '专升本', '自考', '考公', '考编', '面试', '简历', '跳槽', '涨薪', '副业', '兼职', '创业', '开店', '摆摊', '自媒体', '短视频', '直播', '带货', '种草', '测评', '开箱', '回购', '无限回购', '必买', '清单', '好物', '平价', '贵妇', '入门', '进阶', '新手', '老手', '避雷', '红黑榜', '种草机', '拔草'];
-
 function scoreTitle(title) {
   const scores = {};
 
@@ -286,26 +281,22 @@ function scoreTitle(title) {
   scores.emotion = Math.min(100, emotion);
 
   // 3. 搜索友好
-  let search = 25;
+  let search = 30;
   if (PATTERNS.number.test(title)) search += 10;
   if (PATTERNS.result.test(title)) search += 15;
   if (PATTERNS.hotWord.test(title)) search += 10;
   const keywords = title.match(/[^的了一是我有和不着在]/g);
   if (keywords && keywords.length >= 8) search += 15;
   if (title.length >= 10 && title.length <= 30) search += 10;
-  // 品类词加分
-  const hasCategory = CATEGORY_WORDS.some(w => title.includes(w));
-  if (hasCategory) search += 10;
   scores.search = Math.min(100, search);
 
   // 4. 话题性
-  let topic = 20;
+  let topic = 25;
   if (PATTERNS.compare.test(title)) topic += 20;
   if (PATTERNS.suspense.test(title)) topic += 20;
   if (PATTERNS.pain.test(title)) topic += 20;
   if (PATTERNS.question.test(title)) topic += 10;
   if (PATTERNS.hotWord.test(title)) topic += 10;
-  if (hasCategory) topic += 10;
   scores.topic = Math.min(100, topic);
 
   // 5. 简洁度
@@ -468,6 +459,27 @@ function renderResults(result, rewrites) {
   `).join('');
 }
 
+// ── 批量评分 ──
+async function analyzeBatch() {
+  const input = document.getElementById('batchInput').value.trim();
+  if (!input) { alert('请输入至少一个标题'); return; }
+  const titles = input.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+  const resultsDiv = document.getElementById('batchResults');
+  resultsDiv.innerHTML = '<div class="loading active"><div class="spinner"></div><div class="loading-text">正在分析...</div></div>';
+  const results = [];
+  for (const title of titles) {
+    const score = scoreTitle(title);
+    results.push({ title, score });
+  }
+  resultsDiv.innerHTML = results.map((r, i) => `
+    <div class="batch-item"><div><div style="font-weight:600;margin-bottom:4px;">${i+1}. ${escapeHtml(r.title)}</div><div style="font-size:12px;color:var(--text-secondary);">${getScoreBadge(r.score.overall)}</div></div><div style="font-size:24px;font-weight:700;color:${getScoreColor(r.score.overall)};">${r.score.overall}</div></div>
+  `).join('');
+}
+
+function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+function getScoreBadge(score) { if (score >= 90) return '🏆 爆款预定'; if (score >= 75) return '👍 优质标题'; if (score >= 60) return '📝 还不错'; if (score >= 40) return '🔧 建议修改'; return '⚠️ 需要重写'; }
+function getScoreColor(score) { if (score >= 85) return '#00c853'; if (score >= 70) return '#64dd17'; if (score >= 50) return '#ff9800'; return '#ff2442'; }
+
 // ── 升级弹窗 ──
 function showUpgrade() {
   document.getElementById('upgradeModal').classList.add('active');
@@ -494,3 +506,6 @@ async function activateCode() {
 window.onclick = function(e) { if (e.target.id === 'upgradeModal') closeModal(); };
 
 updateUI();
+</script>
+</body>
+</html>
