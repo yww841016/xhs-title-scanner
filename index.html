@@ -364,17 +364,92 @@ function getBadgeClass(type) {
   return map[type] || 'badge-number';
 }
 
-function getDefaultRewrites(title) {
-  const cleaned = title.replace(/[，。！？、；：""''（）\(\)\[\]【】\s]/g, ' ');
-  const words = cleaned.split(/\s+/).filter(w => w.length >= 2);
-  const core = words.slice(0, 3).join('');
-  return [
-    {text: `${core}的3个方法，最后一个太绝了！！`, badge: 'badge-number', badgeText: '数字型', reason: '数字制造具体感'},
-    {text: `谁懂啊！！这个${core}真的绝了`, badge: 'badge-emotion', badgeText: '情绪型', reason: '前置情绪词建立共鸣'},
-    {text: `千万别乱${core}！！99%的人都踩过坑`, badge: 'badge-pain', badgeText: '痛点型', reason: '反常识开头+焦虑感'},
-    {text: `用了${core}才知道，以前都白费了`, badge: 'badge-suspense', badgeText: '悬念型', reason: '制造信息差引发好奇'},
-    {text: `${core}vs${core}：差别太大了`, badge: 'badge-compare', badgeText: '对比型', reason: '对比制造冲突感'}
+function extractKeywords(title) {
+  const stopWords = new Set(['的', '了', '在', '和', '与', '或', '是', '都', '已经', '怎么', '如何', '什么', '这个', '那个', '一个', '怎么', '怎么办']);
+  const cleaned = title.replace(/[，。！？、；：""''（）\(\)\[\]【】…!?!.]/g, ' ');
+  const tokens = cleaned.split(/\s+/).filter(w => w.length >= 2 && !stopWords.has(w));
+  const keywords = [];
+  for (const t of tokens) {
+    if (!keywords.some(k => t.includes(k) || k.includes(t))) keywords.push(t);
+    if (keywords.length >= 4) break;
+  }
+  return keywords;
+}
+
+function generateNumberStyle(title, kw) {
+  const subjects = [
+    () => { const k = kw[0] || '这个'; return `亲测有效的${k}技巧，${kw[1] ? kw[1] + '也要学会' : '建议收藏'}！`; },
+    () => `分享${kw[0] || '我'}的${kw[1] || '3'}个实用经验，第${Math.floor(Math.random()*3)+2}个最管用`,
+    () => `${kw[0] || '方法'}不用多，掌握这${kw[1] ? kw[1] : '几招'}就够了`,
+    () => `${kw[0] || '干货'}合集｜${kw[1] || '亲测有效'}的${kw[2] || '3'}个关键点`,
   ];
+  return subjects[Math.floor(Math.random() * subjects.length)]();
+}
+
+function generateEmotionStyle(title, kw) {
+  const openers = ['真的', '太', '超', '巨', '简直'];
+  const emotions = ['上头', '后悔没早知道', '相见恨晚', '必须安利', '太香了', '被种草了'];
+  const k = kw[0] || '这个';
+  const templates = [
+    () => `${k}${openers[Math.floor(Math.random()*openers.length)]}好用，姐妹们信我`,
+    () => `用了一段时间${k}后，${emotions[Math.floor(Math.random()*emotions.length)]}`,
+    () => `${k}真的绝了！后悔没有早点发现`,
+    () => `谁还没试过${k}？真的会谢！`,
+  ];
+  return templates[Math.floor(Math.random() * templates.length)]();
+}
+
+function generatePainStyle(title, kw) {
+  const k = kw[0] || '这个';
+  const templates = [
+    () => `${k}踩过的坑，我帮你排完了！别再交智商税`,
+    () => `关于${k}，90%的人都不知道这些误区`,
+    () => `看完这篇再决定要不要做${k}，少走${Math.floor(Math.random()*3)+2}年弯路`,
+    () => `${k}千万别乱来！${kw[1] || '这几点'}一定要知道`,
+  ];
+  return templates[Math.floor(Math.random() * templates.length)]();
+}
+
+function generateSuspenseStyle(title, kw) {
+  const k = kw[0] || '这个';
+  const templates = [
+    () => `原来${k}还可以这样做？难怪我一直没效果`,
+    () => `偷偷告诉你一个${k}的小秘诀，一般人我不告诉他`,
+    () => `${k}做到这一步，效果直接翻倍`,
+    () => `坚持${k}${Math.floor(Math.random()*30)+7}天，结果出乎意料`,
+  ];
+  return templates[Math.floor(Math.random() * templates.length)]();
+}
+
+function generateCompareStyle(title, kw) {
+  const k1 = kw[0] || 'A';
+  const k2 = kw[1] || 'B';
+  const templates = [
+    () => `${k1}还是${k2}？做完对比你就知道了`,
+    () => `同一个${k1}，两种做法差距竟然这么大`,
+    () => `${k1}vs${k2}：选错真的亏大了`,
+    () => `从${k1}换到${k2}之后，效果完全不一样`,
+  ];
+  return templates[Math.floor(Math.random() * templates.length)]();
+}
+
+function getDefaultRewrites(title) {
+  const kw = extractKeywords(title);
+  const generators = [
+    { text: generateNumberStyle(title, kw), badge: 'badge-number', badgeText: '数字型' },
+    { text: generateEmotionStyle(title, kw), badge: 'badge-emotion', badgeText: '情绪型' },
+    { text: generatePainStyle(title, kw), badge: 'badge-pain', badgeText: '痛点型' },
+    { text: generateSuspenseStyle(title, kw), badge: 'badge-suspense', badgeText: '悬念型' },
+    { text: generateCompareStyle(title, kw), badge: 'badge-compare', badgeText: '对比型' },
+  ];
+  const reasons = {
+    '数字型': '用具体数字增加可信度',
+    '情绪型': '用真实感受建立信任感',
+    '痛点型': '击中用户顾虑，激发好奇心',
+    '悬念型': '制造信息差，引导点击',
+    '对比型': '通过对比突出差异',
+  };
+  return generators.map(g => ({ ...g, reason: reasons[g.badgeText] }));
 }
 
 // ── 主流程 ──
